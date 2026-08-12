@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Каталог</title>
+</head>
+<body>
+  <main>
+    <h1>Каталог</h1>
+    {% if items %}
+      <ul>
+        {% for item in items %}
+          <li>
+            <a href="{% url 'billing:item_page' item.pk %}">{{ item.name }}</a>
+            — {{ item.price }} {{ item.currency|upper }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>Товаров пока нет. Добавьте их в <a href="/admin/">админке</a>.</p>
+    {% endif %}
+  </main>
+</body>
+</html>

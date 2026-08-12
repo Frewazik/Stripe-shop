@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <main>
+    <h1>{{ title }}</h1>
+    <p>{{ amount }} {{ currency }}</p>
+    <button id="buy-button" type="button">Buy</button>
+    <p id="error-message" role="alert"></p>
+  </main>
+
+  {{ publishable_key|json_script:"pub-key" }}
+  {{ buy_url|json_script:"buy-url" }}
+
+  <script>
+    const stripe = Stripe(JSON.parse(document.getElementById("pub-key").textContent));
+    const buyUrl = JSON.parse(document.getElementById("buy-url").textContent);
+
+    const buyButton = document.getElementById("buy-button");
+    const errorBox = document.getElementById("error-message");
+
+    buyButton.addEventListener("click", async () => {
+      buyButton.disabled = true;
+      errorBox.textContent = "";
+      try {
+        const response = await fetch(buyUrl, { method: "GET" });
+        if (!response.ok) {
+          let message = "Не удалось создать платёжную сессию.";
+          try {
+            const body = await response.json();
+            if (body.error) message = body.error;
+          } catch (_) {}
+          throw new Error(message);
+        }
+        const session = await response.json();
+        const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (error) {
+          throw new Error(error.message);
+        }
+      } catch (error) {
+        errorBox.textContent = error.message;
+        buyButton.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

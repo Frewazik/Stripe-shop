@@ -1,0 +1,48 @@
+[project]
+name = "stripe-shop"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.1,<5.2",
+    "psycopg[binary]>=3.2",
+    "pydantic-settings>=2.5",
+    "stripe>=10",
+    "django-unfold>=0.40",
+    "gunicorn>=23",
+    "whitenoise>=6.7",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "django-stubs[compatible-mypy]>=5.1",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "DJ", "C4", "SIM"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["mypy_django_plugin.main"]
+
+[[tool.mypy.overrides]]
+module = "stripe.*"
+ignore_missing_imports = true
+
+
+[[tool.mypy.overrides]]
+module = "unfold.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["apps.catalog.admin", "apps.billing.admin"]
+disallow_subclassing_any = false
+
+[tool.django-stubs]
+django_settings_module = "core.settings"

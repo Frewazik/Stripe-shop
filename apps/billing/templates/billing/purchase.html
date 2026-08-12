@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <main>
+    <h1>{{ title }}</h1>
+    {% if description %}<p>{{ description }}</p>{% endif %}
+    <p>{{ amount }} {{ currency }}</p>
+
+    <button id="buy-button" type="button">Buy</button>
+
+    <form id="payment-form" hidden>
+      <div id="payment-element"></div>
+      <button id="pay-button" type="submit">Pay</button>
+    </form>
+    <p id="error-message" role="alert"></p>
+  </main>
+
+  {{ publishable_key|json_script:"pub-key" }}
+  {{ buy_url|json_script:"buy-url" }}
+  {{ return_url|json_script:"return-url" }}
+
+  <script>
+    const stripe = Stripe(JSON.parse(document.getElementById("pub-key").textContent));
+    const buyUrl = JSON.parse(document.getElementById("buy-url").textContent);
+    const returnUrl = JSON.parse(document.getElementById("return-url").textContent);
+
+    const buyButton = document.getElementById("buy-button");
+    const form = document.getElementById("payment-form");
+    const errorBox = document.getElementById("error-message");
+    let elements = null;
+
+    buyButton.addEventListener("click", async () => {
+      buyButton.disabled = true;
+      errorBox.textContent = "";
+      try {
+        const response = await fetch(buyUrl, { method: "GET" });
+        if (!response.ok) {
+          let message = "Не удалось инициализировать платёж.";
+          try {
+            const body = await response.json();
+            if (body.error) message = body.error;
+          } catch (_) {}
+          throw new Error(message);
+        }
+        const { client_secret: clientSecret } = await response.json();
+        elements = stripe.elements({ clientSecret });
+        elements.create("payment").mount("#payment-element");
+        buyButton.hidden = true;
+        form.hidden = false;
+      } catch (error) {
+        errorBox.textContent = error.message;
+        buyButton.disabled = false;
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const { error } = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: returnUrl },
+      });
+      if (error) {
+        errorBox.textContent = error.message;
+      }
+    });
+  </script>
+</body>
+</html>
